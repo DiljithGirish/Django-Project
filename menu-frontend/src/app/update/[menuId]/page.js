@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
  * @param {number} id The ID of the menu item to retrieve.
  */
 async function getMenu(id) {
-  const res = await fetch(`http://127.0.0.1:8000/api/menu/${id}/`);
+  const res = await fetch(`/api/menu/${id}/`);
   if (!res.ok) {
     throw new Error("Failed to retrieve menu");
   }
@@ -21,7 +21,7 @@ async function getMenu(id) {
  * @param {Object} data The updated data for the menu item.
  */
 async function updateMenu(id, data) {
-  const res = await fetch(`http://127.0.0.1:8000/api/menu/${id}/`, {
+  const res = await fetch(`/api/menu/${id}/`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -108,3 +108,4 @@ const Page = ({ params }) => {
 };
 
 export default Page;
+
