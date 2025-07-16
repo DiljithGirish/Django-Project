@@ -2,8 +2,8 @@ name: CI + CD | Build images, push to ECR, apply Terraform
 
 on:
   push:
-    branches: [ "main" ]        # ← run on every commit/merge to main
-  workflow_dispatch:            # manual trigger if you need it
+    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -12,61 +12,64 @@ jobs:
     defaults:
       run:
         shell: bash
-        working-directory: terraformfiles   # all TF commands in this dir
+        working-directory: terraformfiles
+
+    # 👇 Set environment variables required for all steps
+    env:
+      AWS_REGION:            ${{ secrets.AWS_REGION }}
+      AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_ACCOUNT_ID:        830105350342
+      TF_IN_AUTOMATION:      "true"
 
     permissions:
       contents: read
-      id-token: write   # not strictly required with key pair auth
-
-    env:                       # shared by all steps
-      AWS_REGION:            ${{ secrets.AWS_REGION }}
-      AWS_ACCOUNT_ID:        830105350342        
-      TF_IN_AUTOMATION:      "true"
-      AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      id-token: write
 
     steps:
-    # ------------------- checkout -------------------
-    - name: Checkout
-      uses: actions/checkout@v4
+      # ------------------- Checkout code -------------------
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    # ------------------- ECR login ------------------
-    - name: Login to Amazon ECR
-      uses: aws-actions/amazon-ecr-login@v2
+      # ------------------- ECR login ------------------------
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
 
-    # ------------------- build & push BACKEND -------
-    - name: Build backend image
-      run: |
-        docker build -f Dockerfile.backend -t backend:ci -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend-repo:latest .
+      # ------------------- Build & Push BACKEND ------------ 
+      - name: Build backend image
+        run: |
+          docker build -f Dockerfile.backend -t backend:ci -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend-repo:latest .
+      - name: Push backend image
+        run: |
+          docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend-repo:latest
 
-    - name: Push backend image
-      run: |
-        docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend-repo:latest
+      # ------------------- Build & Push FRONTEND -----------
+      - name: Build frontend image
+        run: |
+          docker build -f Dockerfile.frontend -t frontend:ci -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend-repo:latest .
+      - name: Push frontend image
+        run: |
+          docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend-repo:latest
 
-    # ------------------- build & push FRONTEND ------
-    - name: Build frontend image
-      run: |
-        docker build -f Dockerfile.frontend -t frontend:ci -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend-repo:latest .
+      # ------------------- Terraform Setup -----------------
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.5
 
-    - name: Push frontend image
-      run: |
-        docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend-repo:latest
+      # ------------------- Terraform Init ------------------
+      - name: Terraform init
+        run: terraform init
 
-    # ------------------- Terraform Setup ------------
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-      with:
-        terraform_version: 1.7.5
+      # ------------------- Terraform Validate --------------
+      - name: Terraform validate
+        run: terraform validate
 
-    - name: Terraform init
-      run: terraform init
+      # ------------------- Terraform Plan ------------------
+      - name: Terraform plan
+        run: terraform plan -out=tfplan
 
-    - name: Terraform validate
-      run: terraform validate
-
-    - name: Terraform plan
-      run: terraform plan -out=tfplan
-
-    - name: Terraform apply
-      run: terraform apply -auto-approve tfplan
+      # ------------------- Terraform Apply -----------------
+      - name: Terraform apply
+        run: terraform apply -auto-approve tfplan
 
