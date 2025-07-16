@@ -1,0 +1,51 @@
+name: 🔥 Destroy AWS stack
+
+# ➊ Only manual dispatch so you never destroy by accident
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type YES to destroy the entire stack"
+        required: true
+        default: "NO"
+
+jobs:
+  destroy:
+    if: ${{ github.event.inputs.confirm == 'YES' }}  # safety check
+    runs-on: ubuntu-latest
+    environment: production
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: terraformfiles
+
+    permissions:
+      contents: read
+      id-token: write      # optional; needed only for OIDC auth
+
+    steps:
+    # ---------- checkout code ----------
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    # ---------- set up AWS credentials ----------
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region:            ${{ secrets.AWS_REGION }}
+
+    # ---------- Terraform ----------
+    - name: Install Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.7.5
+
+    - name: Terraform init
+      run: terraform init
+
+    - name: Terraform destroy
+      run: terraform destroy -auto-approve
+
