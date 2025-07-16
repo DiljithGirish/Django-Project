@@ -24,7 +24,9 @@ resource "aws_iam_role_policy_attachment" "ecs_task_exec_policy" {
 resource "aws_ecr_repository" "backend_repo"  { name = "backend-repo"  }
 resource "aws_ecr_repository" "frontend_repo" { name = "frontend-repo" }
 
-resource "aws_ecs_cluster" "main" { name = "my-cluster" }
+resource "aws_ecs_cluster" "main" {
+  name = var.ecs_cluster_name
+}
 
 # ----------------------- ALB -----------------------
 resource "aws_lb" "app_lb" {
@@ -94,7 +96,7 @@ resource "aws_lb_listener_rule" "backend_rule" {
   }
 }
 
-# ------------------- TASK DEFINITIONS -------------------
+# ------------------- TASK DEFINITIONS -------------------
 resource "aws_ecs_task_definition" "backend" {
   family                   = "backend-task"
   requires_compatibilities = ["FARGATE"]
@@ -103,7 +105,6 @@ resource "aws_ecs_task_definition" "backend" {
   memory                   = var.memory
   execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
 
-  # ✨ ENV added here
   container_definitions = jsonencode([{
     name      = "backend"
     image     = var.backend_image
@@ -129,7 +130,6 @@ resource "aws_ecs_task_definition" "frontend" {
   memory                   = var.memory
   execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
 
-  # ✨ ENV added here
   container_definitions = jsonencode([{
     name      = "frontend"
     image     = var.frontend_image
@@ -149,7 +149,7 @@ resource "aws_ecs_task_definition" "frontend" {
 
 # ------------------- SERVICES -------------------
 resource "aws_ecs_service" "backend_service" {
-  name            = "backend-service"
+  name            = var.backend_service_name
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.backend.arn
   desired_count   = 1
@@ -171,7 +171,7 @@ resource "aws_ecs_service" "backend_service" {
 }
 
 resource "aws_ecs_service" "frontend_service" {
-  name            = "frontend-service"
+  name            = var.frontend_service_name
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.frontend.arn
   desired_count   = 1
@@ -192,7 +192,7 @@ resource "aws_ecs_service" "frontend_service" {
   depends_on = [aws_lb_listener.http]
 }
 
-# ------------------- SECURITY GROUPS -------------------
+# ------------------- SECURITY GROUPS -------------------
 resource "aws_security_group" "lb_sg" {
   name        = "lb-sg"
   description = "Allow HTTP"
