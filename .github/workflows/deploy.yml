@@ -69,3 +69,11 @@ jobs:
     - name: Terraform Apply
       run: terraform -chdir=terraformfiles apply -auto-approve tfplan
 
+    # ------------------- Print Frontend URL ----------
+    - name: Print frontend URL
+      run: |
+        echo "✅ Application deployed successfully!"
+        echo ""
+        echo "🌐 Frontend URL:"
+        terraform -chdir=terraformfiles output -raw frontend_url
+
