@@ -4,6 +4,7 @@ This is a simple example of how to build an API with Django, React, and Docker. 
 article concerning this code here on my [blog](https://koladev.xyz/posts/django-nextjs-crud/).
 
 ## Starting with Django and React
+## Hey
 
 First launch the API server.
 
@@ -29,3 +30,4 @@ npm run dev
 The React client will be available at `http://localhost:3000/`.
 
 Feel free to open issues on the [GitHub repository](https://github.com/koladev32/django-api-nextjs) if you have any questions.
+
