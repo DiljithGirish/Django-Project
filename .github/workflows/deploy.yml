@@ -34,22 +34,22 @@ jobs:
       run: |
         docker build -f Dockerfile.backend \
           -t backend:ci \
-          -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend-repo:latest .
+          -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend-repository:latest .
 
     - name: Push backend image
       run: |
-        docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend-repo:latest
+        docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend-repository:latest
 
     # ------------------- build & push FRONTEND ------
     - name: Build frontend image
       run: |
         docker build -f Dockerfile.frontend \
           -t frontend:ci \
-          -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend-repo:latest .
+          -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend-repository:latest .
 
     - name: Push frontend image
       run: |
-        docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend-repo:latest
+        docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend-repository:latest
 
     # ------------------- Terraform Setup & Deploy ---
     - name: Setup Terraform
