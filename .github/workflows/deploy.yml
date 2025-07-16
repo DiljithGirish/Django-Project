@@ -2,7 +2,7 @@ name: CI + CD | Build images, push to ECR, apply Terraform
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "master" ]
   workflow_dispatch:
 
 jobs:
@@ -14,62 +14,62 @@ jobs:
         shell: bash
         working-directory: terraformfiles
 
-    # 👇 Set environment variables required for all steps
-    env:
-      AWS_REGION:            ${{ secrets.AWS_REGION }}
-      AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_ACCOUNT_ID:        830105350342
-      TF_IN_AUTOMATION:      "true"
-
     permissions:
       contents: read
       id-token: write
 
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      AWS_ACCOUNT_ID: 830105350342
+      TF_IN_AUTOMATION: "true"
+
     steps:
-      # ------------------- Checkout code -------------------
-      - name: Checkout
-        uses: actions/checkout@v4
+    - name: Checkout
+      uses: actions/checkout@v4
 
-      # ------------------- ECR login ------------------------
-      - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v2
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
 
-      # ------------------- Build & Push BACKEND ------------ 
-      - name: Build backend image
-        run: |
-          docker build -f Dockerfile.backend -t backend:ci -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend-repo:latest .
-      - name: Push backend image
-        run: |
-          docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend-repo:latest
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+      with:
+        mask-password: 'true'
 
-      # ------------------- Build & Push FRONTEND -----------
-      - name: Build frontend image
-        run: |
-          docker build -f Dockerfile.frontend -t frontend:ci -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend-repo:latest .
-      - name: Push frontend image
-        run: |
-          docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend-repo:latest
+    - name: Build backend image
+      run: |
+        docker build -f Dockerfile.backend -t backend:ci \
+          -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend-repo:latest .
+    - name: Push backend image
+      run: |
+        docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend-repo:latest
 
-      # ------------------- Terraform Setup -----------------
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.7.5
+    - name: Build frontend image
+      run: |
+        docker build -f Dockerfile.frontend -t frontend:ci \
+          -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend-repo:latest .
+    - name: Push frontend image
+      run: |
+        docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend-repo:latest
 
-      # ------------------- Terraform Init ------------------
-      - name: Terraform init
-        run: terraform init
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.7.5
 
-      # ------------------- Terraform Validate --------------
-      - name: Terraform validate
-        run: terraform validate
+    - name: Terraform init
+      run: terraform init
 
-      # ------------------- Terraform Plan ------------------
-      - name: Terraform plan
-        run: terraform plan -out=tfplan
+    - name: Terraform validate
+      run: terraform validate
 
-      # ------------------- Terraform Apply -----------------
-      - name: Terraform apply
-        run: terraform apply -auto-approve tfplan
+    - name: Terraform plan
+      run: terraform plan -out=tfplan
+
+    - name: Terraform apply
+      run: terraform apply -auto-approve tfplan
 
