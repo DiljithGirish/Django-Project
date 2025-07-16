@@ -30,7 +30,7 @@ jobs:
     # ---------- Build and Push Backend ----------
     - name: Build backend image
       run: |
-        docker build -f Dockerfile.backend -t backend:ci -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend-repo:latest .
+        docker build -f Dockerfile.backend -t backend:ci -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend-repository:latest .
 
     - name: Push backend image
       run: |
@@ -39,7 +39,7 @@ jobs:
     # ---------- Build and Push Frontend ----------
     - name: Build frontend image
       run: |
-        docker build -f Dockerfile.frontend -t frontend:ci -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend-repo:latest .
+        docker build -f Dockerfile.frontend -t frontend:ci -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend-repository:latest .
 
     - name: Push frontend image
       run: |
