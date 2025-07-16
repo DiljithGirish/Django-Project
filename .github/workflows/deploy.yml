@@ -1,4 +1,4 @@
-name: CI + CD | Build images, push to ECR, apply Terraform
+name: CI + CD | Build images, push to ECR, apply Terraform
 
 on:
   push:
@@ -22,6 +22,8 @@ jobs:
       AWS_REGION:            ${{ secrets.AWS_REGION }}
       AWS_ACCOUNT_ID:        830105350342        
       TF_IN_AUTOMATION:      "true"
+      AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
     steps:
     # ------------------- checkout -------------------
@@ -36,6 +38,7 @@ jobs:
     - name: Build backend image
       run: |
         docker build -f Dockerfile.backend -t backend:ci -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend-repo:latest .
+
     - name: Push backend image
       run: |
         docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend-repo:latest
@@ -44,11 +47,12 @@ jobs:
     - name: Build frontend image
       run: |
         docker build -f Dockerfile.frontend -t frontend:ci -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend-repo:latest .
+
     - name: Push frontend image
       run: |
         docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend-repo:latest
 
-    # ------------------- Terraform ------------------
+    # ------------------- Terraform Setup ------------
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
       with:
@@ -65,9 +69,4 @@ jobs:
 
     - name: Terraform apply
       run: terraform apply -auto-approve tfplan
-
-    # ------------- AWS credentials for all steps ------------
-    env:
-      AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
