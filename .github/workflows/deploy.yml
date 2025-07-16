@@ -14,56 +14,58 @@ jobs:
       id-token: write
 
     env:
-      AWS_REGION:            ${{ secrets.AWS_REGION }}
-      AWS_ACCOUNT_ID:        830105350342
-      TF_IN_AUTOMATION:      "true"
-      AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+      TF_IN_AUTOMATION: "true"
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
     steps:
-    - name: Checkout repo
+    # ------------------- checkout -------------------
+    - name: Checkout code
       uses: actions/checkout@v4
 
+    # ------------------- ECR login -------------------
     - name: Login to Amazon ECR
       uses: aws-actions/amazon-ecr-login@v2
 
-    # ---------- Build and Push Backend ----------
+    # ------------------- build & push BACKEND -------
     - name: Build backend image
       run: |
-        docker build -f Dockerfile.backend -t backend:ci -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend-repository:latest .
+        docker build -f Dockerfile.backend \
+          -t backend:ci \
+          -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend-repo:latest .
 
     - name: Push backend image
       run: |
         docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend-repo:latest
 
-    # ---------- Build and Push Frontend ----------
+    # ------------------- build & push FRONTEND ------
     - name: Build frontend image
       run: |
-        docker build -f Dockerfile.frontend -t frontend:ci -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend-repository:latest .
+        docker build -f Dockerfile.frontend \
+          -t frontend:ci \
+          -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend-repo:latest .
 
     - name: Push frontend image
       run: |
         docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend-repo:latest
 
-    # ---------- Terraform ----------
+    # ------------------- Terraform Setup & Deploy ---
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
       with:
         terraform_version: 1.7.5
 
-    - name: Terraform init
-      run: terraform init
-      working-directory: terraformfiles
+    - name: Terraform Init
+      run: terraform -chdir=terraformfiles init
 
-    - name: Terraform validate
-      run: terraform validate
-      working-directory: terraformfiles
+    - name: Terraform Validate
+      run: terraform -chdir=terraformfiles validate
 
-    - name: Terraform plan
-      run: terraform plan -out=tfplan
-      working-directory: terraformfiles
+    - name: Terraform Plan
+      run: terraform -chdir=terraformfiles plan -out=tfplan
 
-    - name: Terraform apply
-      run: terraform apply -auto-approve tfplan
-      working-directory: terraformfiles
+    - name: Terraform Apply
+      run: terraform -chdir=terraformfiles apply -auto-approve tfplan
 
