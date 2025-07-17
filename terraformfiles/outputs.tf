@@ -18,3 +18,7 @@ output "frontend_service_name" {
   value       = aws_ecs_service.frontend_service.name
 }
 
+output "cloudwatch_dashboard_url" {
+  value = "https://us-east-1.console.aws.amazon.com/cloudwatch/home?region=us-east-1#dashboards:name=${var.project_name}-ecs-dashboard"
+}
+
