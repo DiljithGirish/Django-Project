@@ -1,3 +1,13 @@
+terraform {
+  backend "s3" {
+    bucket         = "my-terraform-state-bucket-1234455"
+    key            = "terraform.tfstate"
+    region         = "us-east-1"
+    dynamodb_table = "terraform-lock-table"
+    encrypt        = true
+  }
+}
+
 data "aws_iam_policy_document" "ecs_task_exec_assume" {
   statement {
     effect = "Allow"
