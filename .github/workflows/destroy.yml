@@ -34,7 +34,7 @@ jobs:
       with:
         aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region:            ${{ secrets.AWS_REGION }}
+        aws-region:            us-east-1
 
     # ---------- Terraform ----------
     - name: Install Terraform
@@ -43,7 +43,7 @@ jobs:
         terraform_version: 1.7.5
 
     - name: Terraform init with backend
-      run: terraform init -backend-config="bucket=${{ secrets.TF_S3_BUCKET }}" -backend-config="key=${{ secrets.TF_S3_KEY }}" -backend-config="region=${{ secrets.AWS_REGION }}" -backend-config="dynamodb_table=${{ secrets.TF_DYNAMODB_TABLE }}"
+      run: terraform init -backend-config="bucket=${{ secrets.TF_S3_BUCKET }}" -backend-config="key=${{ secrets.TF_S3_KEY }}" -backend-config="region=us-east-1" -backend-config="dynamodb_table=${{ secrets.TF_DYNAMODB_TABLE }}"
 
     - name: Terraform destroy
       run: terraform destroy -auto-approve

@@ -1,8 +1,3 @@
-variable "aws_region" {
-  description = "AWS region to deploy resources in"
-  type        = string
-}
-
 variable "project_name" {
   description = "Project name prefix for AWS resources"
   type        = string
@@ -10,12 +5,12 @@ variable "project_name" {
 
 /* ---------- Images pushed to ECR ---------- */
 variable "backend_image" {
-  description = "Full ECR URI for the backend image (e.g. 123456789012.dkr.ecr.us‑east‑1.amazonaws.com/backend-repo:latest)"
+  description = "Full ECR URI for the backend image (e.g. 123456789012.dkr.ecr.us-east-1.amazonaws.com/backend-repo:latest)"
   type        = string
 }
 
 variable "frontend_image" {
-  description = "Full ECR URI for the frontend image (e.g. 123456789012.dkr.ecr.us‑east‑1.amazonaws.com/frontend-repo:latest)"
+  description = "Full ECR URI for the frontend image (e.g. 123456789012.dkr.ecr.us-east-1.amazonaws.com/frontend-repo:latest)"
   type        = string
 }
 
