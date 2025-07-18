@@ -1,35 +1,19 @@
-# Build an API with Django and Nextjs
+**How to Run, Deploy and Monitor this Application**
 
-This is a simple example of how to build an API with Django, React, and Docker. You can find the
-article concerning this code here on my [blog](https://koladev.xyz/posts/django-nextjs-crud/).
 
-## Starting with Django and React
-## Hey
+This application can be run in two ways- either manually via the Github Actions(Manual Trigger) or by pushing code changes to the master branch(Push trigger)
 
-#Helo
-First launch the API server.
+   Once the trigger is applied, the CI/CD pipeline starts to run and it will build the docker images, push it to AWS ECR and then deploy it to AWS ECS(built using terraform)
+   and the public url will be displayed as an output
 
-```bash
-cd django-api-nextjs
-python3.11 -m venv venv
-pip install -r requirements.txt
+Monitoring can be done via AWS cloudwatch (Link will be generated as output)
 
-python manage.py migrate
-python manage.py runserver
-```
+There is another pipeline that is designed to destroy the resources built using terraform
 
-The API server will be available at `http://localhost:8000/`.
 
-Then launch the React client.
 
-```bash
-cd menu-frontend
-npm install
-npm run dev
-```
 
-The React client will be available at `http://localhost:3000/`.
 
-Feel free to open issues on the [GitHub repository](https://github.com/koladev32/django-api-nextjs) if you have any questions.
+
 
 
