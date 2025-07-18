@@ -14,9 +14,17 @@ jobs:
     env:
       AWS_REGION: us-east-1
       AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
 
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
@@ -34,14 +42,25 @@ jobs:
             -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend-repository:latest .
 
   push:
-    runs-on: ubuntu-latest
     needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     env:
       AWS_REGION: us-east-1
       AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
 
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
@@ -54,12 +73,19 @@ jobs:
         run: |
           docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend-repository:latest
 
-  terraform:
-    runs-on: ubuntu-latest
+  deploy:
     needs: push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     env:
       AWS_REGION: us-east-1
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
       TF_IN_AUTOMATION: "true"
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -87,13 +113,6 @@ jobs:
 
       - name: Terraform Apply
         run: terraform -chdir=terraformfiles apply -auto-approve tfplan
-
-  output:
-    runs-on: ubuntu-latest
-    needs: terraform
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
 
       - name: Print frontend URL
         run: |
