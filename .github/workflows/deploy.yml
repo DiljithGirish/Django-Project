@@ -6,79 +6,13 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-    env:
-      AWS_REGION: us-east-1
-      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-
-      - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Build backend image
-        run: |
-          docker build -f Dockerfile.backend \
-            -t backend:ci \
-            -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend-repository:latest .
-
-      - name: Build frontend image
-        run: |
-          docker build -f Dockerfile.frontend \
-            -t frontend:ci \
-            -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend-repository:latest .
-
-  push:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-    env:
-      AWS_REGION: us-east-1
-      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-
-      - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Push backend image
-        run: |
-          docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend-repository:latest
-
-      - name: Push frontend image
-        run: |
-          docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend-repository:latest
-
   deploy:
-    needs: push
     runs-on: ubuntu-latest
+
     permissions:
       contents: read
       id-token: write
+
     env:
       AWS_REGION: us-east-1
       AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
@@ -87,37 +21,67 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    # ------------------- checkout -------------------
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.7.5
+    # ------------------- ECR login -------------------
+    - name: Login to Amazon ECR
+      uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+    # ------------------- build & push BACKEND -------
+    - name: Build backend image
+      run: |
+        docker build -f Dockerfile.backend \
+          -t backend:ci \
+          -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend-repository:latest .
 
-      - name: Terraform Init
-        run: terraform -chdir=terraformfiles init
+    - name: Push backend image
+      run: |
+        docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/backend-repository:latest
 
-      - name: Terraform Validate
-        run: terraform -chdir=terraformfiles validate
+    # ------------------- build & push FRONTEND ------
+    - name: Build frontend image
+      run: |
+        docker build -f Dockerfile.frontend \
+          -t frontend:ci \
+          -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend-repository:latest .
 
-      - name: Terraform Plan
-        run: terraform -chdir=terraformfiles plan -out=tfplan
+    - name: Push frontend image
+      run: |
+        docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/frontend-repository:latest
 
-      - name: Terraform Apply
-        run: terraform -chdir=terraformfiles apply -auto-approve tfplan
+    # ------------------- Terraform Setup & Deploy ---
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.7.5
 
-      - name: Print frontend URL
-        run: |
-          echo "✅ Application deployed successfully!"
-          echo ""
-          echo "🌐 Frontend URL:"
-          terraform -chdir=terraformfiles output -raw frontend_url
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+
+    - name: Terraform Init
+      run: terraform -chdir=terraformfiles init
+
+    - name: Terraform Validate
+      run: terraform -chdir=terraformfiles validate
+
+    - name: Terraform Plan
+      run: terraform -chdir=terraformfiles plan -out=tfplan
+
+    - name: Terraform Apply
+      run: terraform -chdir=terraformfiles apply -auto-approve tfplan
+
+    # ------------------- Print Frontend URL ----------
+    - name: Print frontend URL
+      run: |
+        echo "Application deployed successfully!"
+        echo ""
+        echo "Frontend URL:"
+        terraform -chdir=terraformfiles output -raw frontend_url
+
 
